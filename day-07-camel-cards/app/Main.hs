@@ -5,7 +5,7 @@ import qualified Data.Map as Map
 import Data.Function ((&))
 import Data.List (sort, sortBy)
 
-data HandType = Pair | TwoPairs | IsThreeOfAKind | FullHouse | FourOfAKind | FiveOfAKind deriving (Eq, Ord)
+data HandType = None | Pair | TwoPairs | IsThreeOfAKind | FullHouse | FourOfAKind | FiveOfAKind deriving (Eq, Ord)
 
 countOccurrences :: String -> Map.Map Char Int
 countOccurrences str = Map.fromListWith (+) [(c, 1) | c <- str]
@@ -47,7 +47,6 @@ isPair s = let
     2 `elem` counts && not (isFullHouse s) && not (isTwoPairs s)
 
 
---example of one line: "32T3K 765", which should be one pair
 getHandType :: String -> HandType
 getHandType s
   | isFiveOfAKind s = FiveOfAKind
@@ -56,14 +55,8 @@ getHandType s
   | isThreeOfAKind s = IsThreeOfAKind
   | isTwoPairs s = TwoPairs
   | isPair s = Pair
-  | otherwise = error ("No hand type found for input: " ++ s)
+  | otherwise = None
 
-sortHand :: HandType -> HandType -> Ordering
-sortHand firstHand secondHand
-  | firstHand == secondHand = EQ
-  | otherwise = compare firstHand secondHand
-
---KK677 and KTJJT are both two pair
 compareByCardValues :: Char -> Char -> Ordering
 compareByCardValues firstCard secondCard
   | firstCard == secondCard = EQ
@@ -86,9 +79,13 @@ compareByStringHand firstHand secondHand
 
 sortLinesByHandRank :: [String] -> [String]
 sortLinesByHandRank xs = let
-    preSortedHands = sortBy compareByStringHand xs & break (==" ") & fst
+    -- preSortedHands = sortBy compareByStringHand xs & break (==" ") & fst
+    preSortedHands = sortBy compareByStringHand (takeWhile (/= " ") xs)
   in
-    preSortedHands --sortBy sortHand (map getHandType hands)
+    sortBy (\a b -> compare (getHandType a) (getHandType b)) (takeWhile (/= " ") xs)
+
+mapIndexed :: (Int -> a -> b) -> [a] -> [b]
+mapIndexed f = zipWith f [0..]
 
 
 main :: IO ()
@@ -103,6 +100,9 @@ main = do
   print $ not (isPair "AA5BB")
   print $ isPair "AABCD"
   print $ FiveOfAKind > FourOfAKind
+
   contents <- readFile "./app/inputs/day-07-test.txt"
-  let hands = ["KK677", "KTJJT" , "Q1111", "T1111", "J5555", "A1111"] --contents & lines
-  print $ hands & sortBy compareByStringHand
+  let sorted = contents & lines & sortLinesByHandRank
+  let rankedBids = map (read . snd . break (==' ')) sorted :: [Int]
+  let result = sum (mapIndexed (\i bid -> bid * (i + 1)) rankedBids)
+  print result

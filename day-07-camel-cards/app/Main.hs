@@ -2,6 +2,8 @@ module Main where
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Function ((&))
+import Data.List (sort, sortBy)
 
 data HandType = Pair | TwoPairs | IsThreeOfAKind | FullHouse | FourOfAKind | FiveOfAKind deriving (Eq, Ord)
 
@@ -45,6 +47,49 @@ isPair s = let
     2 `elem` counts && not (isFullHouse s) && not (isTwoPairs s)
 
 
+--example of one line: "32T3K 765", which should be one pair
+getHandType :: String -> HandType
+getHandType s
+  | isFiveOfAKind s = FiveOfAKind
+  | isFourOfAKind s = FourOfAKind
+  | isFullHouse s = FullHouse
+  | isThreeOfAKind s = IsThreeOfAKind
+  | isTwoPairs s = TwoPairs
+  | isPair s = Pair
+  | otherwise = error ("No hand type found for input: " ++ s)
+
+sortHand :: HandType -> HandType -> Ordering
+sortHand firstHand secondHand
+  | firstHand == secondHand = EQ
+  | otherwise = compare firstHand secondHand
+
+--KK677 and KTJJT are both two pair
+compareByCardValues :: Char -> Char -> Ordering
+compareByCardValues firstCard secondCard
+  | firstCard == secondCard = EQ
+  | firstCard == 'A' = GT
+  | secondCard == 'A' = LT
+  | firstCard == 'K' = GT
+  | secondCard == 'K' = LT
+  | firstCard == 'Q' = GT
+  | secondCard == 'Q' = LT
+  | firstCard == 'J' = GT
+  | secondCard == 'J' = LT
+  | firstCard == 'T' = GT
+  | secondCard == 'T' = LT
+  | otherwise = compare firstCard secondCard
+
+compareByStringHand :: String -> String -> Ordering
+compareByStringHand firstHand secondHand
+  | head firstHand == head secondHand = compareByStringHand (tail firstHand) (tail secondHand)
+  | otherwise = compareByCardValues (head firstHand) (head secondHand)
+
+sortLinesByHandRank :: [String] -> [String]
+sortLinesByHandRank xs = let
+    preSortedHands = sortBy compareByStringHand xs & break (==" ") & fst
+  in
+    preSortedHands --sortBy sortHand (map getHandType hands)
+
 
 main :: IO ()
 main = do
@@ -58,3 +103,6 @@ main = do
   print $ not (isPair "AA5BB")
   print $ isPair "AABCD"
   print $ FiveOfAKind > FourOfAKind
+  contents <- readFile "./app/inputs/day-07-test.txt"
+  let hands = ["KK677", "KTJJT" , "Q1111", "T1111", "J5555", "A1111"] --contents & lines
+  print $ hands & sortBy compareByStringHand

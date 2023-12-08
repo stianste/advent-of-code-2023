@@ -3,6 +3,8 @@ module Main where
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
+data HandType = Pair | TwoPairs | IsThreeOfAKind | FullHouse | FourOfAKind | FiveOfAKind deriving (Eq, Ord)
+
 countOccurrences :: String -> Map.Map Char Int
 countOccurrences str = Map.fromListWith (+) [(c, 1) | c <- str]
 
@@ -43,6 +45,7 @@ isPair s = let
     2 `elem` counts && not (isFullHouse s) && not (isTwoPairs s)
 
 
+
 main :: IO ()
 main = do
   print $ isFiveOfAKind "55555"
@@ -54,3 +57,4 @@ main = do
   print $ not (isTwoPairs "AA555")
   print $ not (isPair "AA5BB")
   print $ isPair "AABCD"
+  print $ FiveOfAKind > FourOfAKind

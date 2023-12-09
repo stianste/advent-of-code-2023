@@ -5,6 +5,7 @@ import qualified Data.Map as Map
 import Data.Function ((&))
 import Data.List (sort, sortBy)
 import Data.Ord (comparing)
+import Utils (countOccurrences, joinTupleToString, mapIndexed)
 
 data HandType
     = NoHandType { rank :: Int, hand :: String }
@@ -40,12 +41,6 @@ fiveOfAKind = FiveOfAKind 6
 instance Ord HandType where
     compare x y = if rank x == rank y then compareByStringHand (hand x) (hand y) else compare (rank x) (rank y)
 
-countOccurrences :: String -> Map.Map Char Int
-countOccurrences str = Map.fromListWith (+) [(c, 1) | c <- str]
-
-countOccurrencesOfInts :: [Int] -> Map.Map Int Int
-countOccurrencesOfInts listOfInts = Map.fromListWith (+) [(c, 1) | c <- listOfInts]
-
 isFiveOfAKind :: String -> Bool
 isFiveOfAKind s = Set.size (Set.fromList s) == 1
 
@@ -71,14 +66,13 @@ isTwoPairs :: String -> Bool
 isTwoPairs s = let
     counts = Map.elems (countOccurrences s)
   in
-    Map.lookup 2 (countOccurrencesOfInts counts) == Just 2
+    Map.lookup 2 (countOccurrences counts) == Just 2
 
 isPair :: String -> Bool
 isPair s = let
     counts = Map.elems (countOccurrences s)
   in
     2 `elem` counts && not (isFullHouse s) && not (isTwoPairs s)
-
 
 getHandType :: String -> HandType
 getHandType s
@@ -110,48 +104,16 @@ compareByStringHand firstHand secondHand
   | head firstHand == head secondHand = compareByStringHand (tail firstHand) (tail secondHand)
   | otherwise = compareByCardValues (head firstHand) (head secondHand)
 
-tupleToString :: (String, String) -> String
-tupleToString (a, b) = a ++ b
-
-stringList :: [(String, String)] -> [String]
-stringList = map tupleToString
-
 sortLinesByHandRank :: [String] -> [String]
 sortLinesByHandRank xs = let
     tuples = map (break (==' ')) xs
   in
-    stringList (sortBy (comparing (getHandType . fst)) tuples)
-
-mapIndexed :: (Int -> a -> b) -> [a] -> [b]
-mapIndexed f = zipWith f [0..]
-
+    map joinTupleToString (sortBy (comparing (getHandType . fst)) tuples)
 
 main :: IO ()
 main = do
-  print $ isFiveOfAKind "55555"
-  print $ isFourOfAKind "A5555"
-  print $ isFullHouse "AA555"
-  print $ not (isThreeOfAKind "AA555") --because full house
-  print $ isThreeOfAKind "AB555"
-  print $ isTwoPairs "AA5BB"
-  print $ not (isTwoPairs "AA555")
-  print $ not (isPair "AA5BB")
-  print $ isPair "AABCD"
-  print $ fiveOfAKind "" > fourOfAKind ""
-  print $ pair "" > noHandType ""
-  print $ noHandType "K5555" > noHandType "Q5555"
-  print $ fourOfAKind "" > fullHouse ""
-  print "A888K"
-  let firstHandType = getHandType "A888K"
-  print firstHandType
-  print "A6AAA"
-  let secondHandType = getHandType "A6AAA"
-  print secondHandType
-  print $ secondHandType > firstHandType
-
   contents <- readFile "./app/inputs/day-07.txt"
   let sorted = contents & lines & sortLinesByHandRank
-  print sorted
   let rankedBids = map (read . snd . break (==' ')) sorted :: [Int]
   let result = sum (mapIndexed (\i bid -> bid * (i + 1)) rankedBids)
-  print result
+  print result --248396258

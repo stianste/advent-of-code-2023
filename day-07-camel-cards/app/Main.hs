@@ -5,7 +5,26 @@ import qualified Data.Map as Map
 import Data.Function ((&))
 import Data.List (sort, sortBy)
 
-data HandType = None | Pair | TwoPairs | IsThreeOfAKind | FullHouse | FourOfAKind | FiveOfAKind deriving (Eq, Ord)
+data HandType
+    = NoHandType { rank :: Int, hand :: String }
+    | Hand { rank :: Int }
+    deriving (Eq, Show)
+
+noHandType :: String -> HandType
+noHandType = NoHandType 0
+
+pair = Hand 1
+twoPairs = Hand 2
+threeOfAKind = Hand 3
+fullHouse = Hand 4
+fourOfAKind = Hand 5
+fiveOfAKind = Hand 6
+
+instance Ord HandType where
+    compare (NoHandType _ hand1) (NoHandType _ hand2) = compareByStringHand hand1 hand2
+    compare (NoHandType _ _) _ = LT
+    compare _ (NoHandType _ _) = GT
+    compare x y = rank x `compare` rank y
 
 countOccurrences :: String -> Map.Map Char Int
 countOccurrences str = Map.fromListWith (+) [(c, 1) | c <- str]
@@ -49,13 +68,13 @@ isPair s = let
 
 getHandType :: String -> HandType
 getHandType s
-  | isFiveOfAKind s = FiveOfAKind
-  | isFourOfAKind s = FourOfAKind
-  | isFullHouse s = FullHouse
-  | isThreeOfAKind s = IsThreeOfAKind
-  | isTwoPairs s = TwoPairs
-  | isPair s = Pair
-  | otherwise = None
+  | isFiveOfAKind s = fiveOfAKind
+  | isFourOfAKind s = fourOfAKind
+  | isFullHouse s = fullHouse
+  | isThreeOfAKind s = threeOfAKind
+  | isTwoPairs s = twoPairs
+  | isPair s = pair
+  | otherwise = noHandType s
 
 compareByCardValues :: Char -> Char -> Ordering
 compareByCardValues firstCard secondCard
@@ -78,11 +97,8 @@ compareByStringHand firstHand secondHand
   | otherwise = compareByCardValues (head firstHand) (head secondHand)
 
 sortLinesByHandRank :: [String] -> [String]
-sortLinesByHandRank xs = let
-    -- preSortedHands = sortBy compareByStringHand xs & break (==" ") & fst
-    preSortedHands = sortBy compareByStringHand (takeWhile (/= " ") xs)
-  in
-    sortBy (\a b -> compare (getHandType a) (getHandType b)) (takeWhile (/= " ") xs)
+sortLinesByHandRank xs = sortBy (\a b -> compare (getHandType a) (getHandType b)) (takeWhile (/= " ") xs)
+
 
 mapIndexed :: (Int -> a -> b) -> [a] -> [b]
 mapIndexed f = zipWith f [0..]
@@ -99,10 +115,13 @@ main = do
   print $ not (isTwoPairs "AA555")
   print $ not (isPair "AA5BB")
   print $ isPair "AABCD"
-  print $ FiveOfAKind > FourOfAKind
+  print $ fiveOfAKind > fourOfAKind
+  print $ pair > noHandType "AABCD"
+  print $ noHandType "K5555" > noHandType "Q5555"
 
   contents <- readFile "./app/inputs/day-07-test.txt"
   let sorted = contents & lines & sortLinesByHandRank
+  print sorted
   let rankedBids = map (read . snd . break (==' ')) sorted :: [Int]
   let result = sum (mapIndexed (\i bid -> bid * (i + 1)) rankedBids)
   print result

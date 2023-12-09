@@ -10,12 +10,21 @@ colorMap = Map.fromList [("red", 12), ("green", 13), ("blue", 14)]
 replaceSemicolon :: String -> String
 replaceSemicolon = map (\c -> if c == ';' then ',' else c)
 
--- Example: "Game 2:1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue" -> "1 blue, 2 green, 3 green, 4 blue, 1 red, 1 green, 1 blue"
+getGameId :: String -> Int
+getGameId s = let
+    (gameId, _) = break (== ':') s
+  in
+    read (last (words gameId)) :: Int
+
+getSanitisedReveals :: String -> String
+getSanitisedReveals s = let
+    (_, reveals) = break (== ':') s
+  in
+    replaceSemicolon (tail reveals)
 
 getRevealTuples :: String -> [(String, Int)]
 getRevealTuples s = let
-    (gameNumber, reveals) = break (== ':') s
-    sanitisedReveals = replaceSemicolon (tail reveals)
+    sanitisedReveals = getSanitisedReveals s
     revealList = splitOn ", " sanitisedReveals
     tupleList = map (break (== ' ')) revealList
   in
@@ -29,9 +38,21 @@ tupleIsInvalid colorMap (color, presentedValue) = case Map.lookup color colorMap
 anyViolations :: ColorMap -> [(String, Int)] -> Bool
 anyViolations colorMap = any (tupleIsInvalid colorMap)
 
+getGameIdIfNotViolatedElseZero :: ColorMap -> String -> Int 
+getGameIdIfNotViolatedElseZero colorMap s = let
+    tuples = getRevealTuples s
+  in
+    if not (anyViolations colorMap tuples) then getGameId s else 0
 
 main :: IO ()
 main = do
-  let tuples = getRevealTuples "Game 1:3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
+  let exampleString = "Game 1:3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
+  let tuples = getRevealTuples exampleString 
   print tuples
   print $ anyViolations colorMap tuples
+  print $ getGameId exampleString 
+  contents <- readFile "./app/inputs/day-02.txt"
+  let violatingIds = map (getGameIdIfNotViolatedElseZero colorMap) (lines contents)
+  let result = sum violatingIds
+  print violatingIds
+  print result

@@ -14,5 +14,8 @@ main :: IO ()
 main = do
   -- let races = [(7, 9), (15, 40), (30, 200)]
   let races = [(59, 543), (68, 1020), (82, 1664), (74, 1022)] 
-  let result = product $ map processRace races
-  print result
+  -- let part1 = product $ map processRace races
+  -- print part1
+
+  let part2 = processRace (59688274, 543102016641022)
+  print part2

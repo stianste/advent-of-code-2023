@@ -1,5 +1,6 @@
 module Main where
-import Data.List (transpose)
+import Data.List (transpose, partition, intercalate)
+import Data.List.Split
 
 exampleInput :: String
 exampleInput = "O....#...." ++
@@ -13,30 +14,29 @@ exampleInput = "O....#...." ++
                "#....###.." ++
                "#OO..#...."
 
-partialTriangleFunction :: Int -> Int -> Int
-partialTriangleFunction n numberToTake = sum $ take numberToTake [n,(n-1)..]
 
-calculateColumnValue :: String -> Int -> Int
-calculateColumnValue input startValue = let
-    numToTake = length $ filter (/='.') (takeWhile (/='#') input)
-  in
-    partialTriangleFunction startValue numToTake
+moveOsLeft :: String -> String
+moveOsLeft xs = let (oNum, rest) = partition (=='O') xs
+              in oNum ++ rest
+
+moveOs :: String -> String
+moveOs = intercalate "#" . map moveOsLeft . splitOn "#"
+
+calculateColumnValue :: String -> Int
+calculateColumnValue input = sum $ zipWith (\value index -> if value == 'O' then index else 0) (reverse input) [1..]
+
+parseAndCalculateColumn :: String -> Int
+parseAndCalculateColumn input = calculateColumnValue $ moveOs input
 
 
 main :: IO ()
 main = do
-  let test = partialTriangleFunction 10 4
-  print test
-  let testColumn = "0000..#"
-  let columnResult = calculateColumnValue testColumn 10
+  let testColumn = "OOOO..#..."
+  let columnResult = parseAndCalculateColumn testColumn
+  print columnResult
 
-  content <- readFile "./app/inputs/day-14-test.txt"
+  content <- readFile "./app/inputs/day-14.txt"
   let columns = transpose $ lines content
-  let m = length $ head columns
-  print m
-  print columns
-  let results = map (`calculateColumnValue` m) columns
-  print results
-  let result = sum results
+  let result = sum $ map parseAndCalculateColumn columns
   print result
 

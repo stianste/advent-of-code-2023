@@ -1,8 +1,7 @@
 module Main where
 import Data.Function ((&))
-
-
-import Data.Char
+import Data.List.Split (splitOn)
+import Data.Char (ord)
 
 hashAlgorithm :: Int -> Int -> [Char] -> Int
 hashAlgorithm currentSum index target
@@ -12,3 +11,6 @@ hashAlgorithm currentSum index target
 main :: IO ()
 main = do
   print $ hashAlgorithm 0 0 "HASH"
+  content <- readFile "./app/inputs/day-15.txt"
+  let result = sum $ map (hashAlgorithm 0 0) (splitOn "," content)
+  print result
